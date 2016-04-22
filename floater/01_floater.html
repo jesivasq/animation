@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<!-- LINK TO GOOGLE FONTS -->
+<link href='https://fonts.googleapis.com/css?family=Amatic+SC' rel='stylesheet' type='text/css'>
+
+<style> 
+  body {
+    background: #333;
+  }
+
+  div {
+    margin: 10px;
+    width:800px;
+  }
+
+  canvas {
+    border: 1px solid #000; 
+    background: DeepSkyBlue;
+  }
+
+  button {
+    border-radius: 15px;
+    background: #bada55;
+    border: 1px solid #aaa;
+    padding: 3px 10px;
+  }
+
+  button:hover {
+    background: #c0ff33;
+  }
+
+  button:active {
+    background: #fefeff;
+    color: #00f;
+  }
+
+  h1 {
+    font-family: 'Amatic SC', cursive;
+    font-size: 3em;
+    color: #fff;
+    text-align: center;
+  }
+
+  p {
+    margin: 10px;
+    color: #fff;
+  }
+
+</style>
+
+<!-- createjs includes -->
+<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
+<script src="https://code.createjs.com/tweenjs-0.6.2.min.js"></script>
+
+<!-- my script -->
+<script>
+
+  var stage;
+  var dotAry = [];
+  var canvas;
+  var pX, pY;
+  var numChil;
+
+  function init() {
+	canvas = document.getElementById("canvas")
+	stage = new createjs.Stage("canvas");
+	//canvas.addEventListener("click", clickDot );
+	stage.on("stagemousedown",clickDot);
+
+	numChil = document.getElementById("numChil");
+
+	createjs.Ticker.setFPS(20);
+	createjs.Ticker.addEventListener("tick", tick);
+
+	console.log("init completed");
+  }
+
+  /* ***************************************************************
+         ADD DOTS TO THE SCREEN
+     *************************************************************** */
+
+  function makeDot( ex, why ){
+	var circle = new createjs.Shape();
+	circle.graphics.beginFill("#fff")
+	      .drawCircle(0, 0, 2 + (1 + 8*Math.random()));
+	circle.x = ex;
+	circle.y = why;
+	circle.alpha = Math.random();
+	circle.theta = Math.random();
+	stage.addChild(circle);
+	dotAry.push(circle);
+  }
+
+  // when the user presses the button
+  function drawDot(){
+	makeDot( canvas.width*Math.random(), canvas.height*Math.random());
+  }
+
+  // when the user clicks the stage
+  function clickDot(e){
+
+	makeDot( e.stageX, e.stageY);
+
+	stage.addEventListener("stagemousemove",dragDot);
+	stage.addEventListener("stagemouseup", stopDrag);
+
+  }
+
+  // when the user drags
+  function dragDot(e){
+    if( pX != e.stageX || pY != e.stageY ){
+
+	makeDot( e.stageX, e.stageY);
+
+	pX = e.stageX;
+	pY = e.stageY;
+    }
+
+  }
+
+  /* *************************************************************** */
+
+  function stopDrag(e){
+	stage.removeEventListener("stagemousemove", dragDot);
+	stage.removeEventListener("stagemouseup", stopDrag);
+  }
+
+  function clr(){
+	stage.removeAllChildren();
+  }
+
+
+
+  function updateDot( dot ){
+	dot.x += 2*Math.sin( dot.theta );
+	dot.y += 2*Math.cos( dot.theta );
+	dot.theta += dot.alpha/10;
+  }
+
+  /* *********************
+          T I C K 
+     *********************/
+  function tick(e){
+	// don't make it read length EVERY TIME it runs the loop
+	all = dotAry.length; 
+
+	for( var i = 0; i< all; i++ ){
+	   updateDot( dotAry[i] );
+	}
+	stage.update();
+	numChil.innerHTML = stage.numChildren;
+  }
+
+</script>
+
+</head>
+
+
+<body onload="init();">
+
+    <div>
+
+  	<h1>Drag to draw</h1>
+
+  	<canvas id="canvas" width="800" height="600"></canvas>
+	<div>
+	   <button type="button" id="btn" onclick="drawDot()">draw dot</button>
+	   <button type="button" id="clr" onclick="clr()">clear</button>
+	   <p id="numChil">foo<p>
+	</div>
+  </div>
+
+
+</body>
+
+
+</html>
