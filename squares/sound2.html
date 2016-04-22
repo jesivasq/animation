@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>sound with mute</title>
+
+	<!-- MATERIAL ICONS -->
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons"rel="stylesheet">
+
+	<style type="text/css">
+		body {
+			background: #333;
+		}
+
+		div {
+			text-align: center;
+		}
+
+		canvas {
+			background: #111;
+			border: 1px solid #555;
+			display: block;
+			margin: 0px auto;
+		}
+
+		button {
+			margin-top: 20px;
+			border-radius: 25px;
+			border: 1px solid #111;
+			padding: 5px 15px;
+		}
+
+		button.muteOff {
+			background: #222;
+			color: #777;
+		}
+
+		button.muteOn {
+			background: DeepSkyBlue;
+			color: #fff;
+		}
+
+		button.muteOff:hover {
+			background: #444;
+			color: #aaa;
+		}
+
+		button.muteOn:hover {
+			background: #ccf2ff;
+			color: DeepSkyBlue;
+		}
+
+		button.muteOn:active, button.muteOff:active {
+			background: #fff;
+			color: DeepSkyBlue;
+		}
+
+	</style>
+
+	<!-- create js links -->
+	<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
+	<script src="https://code.createjs.com/soundjs-0.6.2.min.js"></script>
+
+	<script type="text/javascript">
+		
+		var vangogh;
+		var stage;
+		var muted = false;
+
+		// for the squares
+		var cuadro;
+		var squares = [];
+		var gap = 25;
+		var d = gap * 2; // diameter
+		var sndAry = [];
+
+		// for the cueball
+		var cueball;
+		var rad; // radius
+
+		// init: called on body load
+		function init() {
+			// STAGE SETUP
+			vangogh = document.getElementById("vangogh");
+			stage = new createjs.Stage( vangogh );
+			stage.enableMouseOver();	
+
+			// sound setup
+			sndAry = [
+				"ting0",
+				"ting1",
+				"ting2",
+				"ting3",
+				"ting4"
+			];
+			createjs.Sound.registerSound("sound/ting0.mp3", sndAry[0]);
+			createjs.Sound.registerSound("sound/ting1.mp3", sndAry[1]);
+			createjs.Sound.registerSound("sound/ting2.mp3", sndAry[2]);
+			createjs.Sound.registerSound("sound/ting3.mp3", sndAry[3]);
+			createjs.Sound.registerSound("sound/ting4.mp3", sndAry[4]);
+
+
+			// TICKER SETUP
+			createjs.Ticker.setFPS(30);
+			createjs.Ticker.addEventListener("tick", tick);
+
+			// SPRITE SETUP
+			var data = {
+		        images: ["square_sprite.png"],
+		        frames: {width:d, height:d},
+		        animations: {
+		            idle:0,
+		            flash:[1,15, "idle"]
+		        }
+
+    		};
+		    var ss_square = new createjs.SpriteSheet(data);
+
+		    // MAKE GRID
+			for( var i = 0; i < 5; i++){
+				for( var j = 0; j < 5; j++){
+					cuadro = new createjs.Sprite( ss_square, "idle");
+					cuadro.x = gap + i*( d+gap );
+					cuadro.y = gap + j*(d+gap)
+					cuadro.addEventListener("click", flashSquare);
+					squares.push(cuadro);
+					stage.addChild(cuadro);
+				}
+			}
+
+			// MAKE CUEBALL
+			cueball = new createjs.Shape();
+			rad = 10;
+			cueball.graphics.beginFill("#FFF");
+			cueball.graphics.drawCircle(0, 0, rad);
+			cueball.x = vangogh.width/2;
+			cueball.y = vangogh.height/2;
+			stage.addChild(cueball);
+
+			//I'm making these properties up
+			cueball.xDir = cueball.yDir = 1;
+			cueball.xSpeed = 7;
+			cueball.ySpeed = 12;
+
+		} // end init();
+
+		// FLASH SQUARES
+		function flashSquare(e){
+			e.target.gotoAndPlay("flash");
+		}
+
+		function setMute(){
+			var prevClass = ( muted ) ? "muteOn" : "muteOff";
+			var newClass = ( muted ) ? "muteOff" : "muteOn" ;
+			var btn = document.getElementById("btn");
+			btn.classList.remove(prevClass);
+			btn.classList.add(newClass);
+			muted = !muted;
+
+			/* var prevClass = ( muted ) ? "muteOff" : "muteOn";
+			var newClass = ( muted ) ? "muteOn" : "muteOff";
+			var myElements = document.getElementsByClassName( prevClass );
+			console.log( myElements );
+			var len = myElements.length
+			console.log(len);
+			for (var i = 0; i < len ; i++) {
+				myElements[i].classList.remove(prevClass);
+				myElements[i].classList.add(newClass);
+			}
+			// */
+			//muted = !muted;
+		}
+
+		// the tick function
+		function tick() {
+			stage.update();
+
+			if( cueball.x - rad <= 0 || 
+				cueball.x + rad >= vangogh.width){
+				cueball.xDir*= -1;
+			}
+			if( cueball.y - rad <= 5 || 
+				cueball.y + rad >= vangogh.height - 5){
+				cueball.yDir*= -1;
+			}
+
+			cueball.x += cueball.xSpeed * cueball.xDir;
+			cueball.y += cueball.ySpeed * cueball.yDir;
+
+			var pt = cueball.localToLocal(cueball.x, cueball.y, squares[0]);
+
+			// check for collision
+			var mySquares = squares.length;
+			for( var i = 0; i < mySquares; i++){
+				if( squares[i].currentFrame == 0 ){
+					if( cueball.x >= squares[i].x && 
+						cueball.x <= squares[i].x + d &&
+						cueball.y >= squares[i].y &&
+						cueball.y <= squares[i].y + d ){
+
+						squares[i].gotoAndPlay("flash");
+						if( !muted ){
+							createjs.Sound.play(sndAry[i%5]);
+						}
+					}
+				}
+
+			}
+		}
+
+	</script>
+</head>
+<body onload="init();">
+	<canvas id="vangogh" width="400" height="400">
+		Canvas is not supported :(
+	</canvas>
+	<div>
+		<button type="button" id="btn" onclick="setMute()" class="muteOff"><i class="material-icons">volume_off</i></button>
+	</div>
+</body>
+</html>
